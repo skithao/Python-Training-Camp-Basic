@@ -52,9 +52,9 @@ jobs:
     - name: Decode API URL and Token (Linux)
       if: runner.os == 'Linux'
       run: |
-        echo "DECODED_API_URL=$(echo "$ENCODED_API_URL" | base64 --decode)" >> $GITHUB_ENV
-        echo "DECODED_TOKEN=$(echo "$ENCODED_TOKEN" | base64 --decode)" >> $GITHUB_ENV
-        echo "::add-mask::$(echo $ENCODED_TOKEN | base64 --decode)" 
+        echo "DECODED_API_URL=$(printf '%s' "$ENCODED_API_URL" | base64 --decode)" >> $GITHUB_ENV
+        echo "DECODED_TOKEN=$(printf '%s' "$ENCODED_TOKEN" | base64 --decode)" >> $GITHUB_ENV
+        echo "::add-mask::$(printf '%s' "$ENCODED_TOKEN" | base64 --decode)"
       shell: bash
 
     - name: Decode API URL and Token (Windows)
@@ -194,15 +194,11 @@ jobs:
         # 打印 JSON 时隐藏 Token
         echo "构造的 JSON (Token 已隐藏): $(printf '{"channel": "github", "courseId": %d, "ext": "{}", "name": "%s", "score": %s, "totalScore": 100}' "$COURSE_ID" "$GITHUB_ACTOR" "$SCORE")"
 
-        curl -X POST \
-             -H 'accept: application/json;charset=utf-8' \
-             -H 'Content-Type: application/json' \
-             # 使用解码后的 Token
-             -H "token: $DECODED_TOKEN" \
-             -d "$JSON_PAYLOAD" \
-             # 使用解码后的 API URL
-             "$DECODED_API_URL" \
-             --fail --show-error
+        echo "Debug Token Check (first 5 chars): [${DECODED_TOKEN:0:5}...]"
+        # ------------- 调试输出结束 -------------
+
+        # 将 curl 命令放在单行，移除 '\' 续行符
+        curl -X POST -H 'accept: application/json;charset=utf-8' -H 'Content-Type: application/json' -H "token: $DECODED_TOKEN" -d "$JSON_PAYLOAD" "$DECODED_API_URL" --fail --show-error
 
         echo "API 调用尝试完成。"
       shell: bash # 因为我们限制了在 ubuntu 上运行，所以这里可以用 bash
